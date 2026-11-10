@@ -1,0 +1,26 @@
+[
+{
+  "directory": "/home/luther/Projects/CTextSearch/build",
+  "command": "/usr/bin/cc  -I/home/luther/Projects/CTextSearch/inc -g -std=gnu11 -o CMakeFiles/text_search.dir/src/text_search.c.o -c /home/luther/Projects/CTextSearch/src/text_search.c",
+  "file": "/home/luther/Projects/CTextSearch/src/text_search.c",
+  "output": "CMakeFiles/text_search.dir/src/text_search.c.o"
+},
+{
+  "directory": "/home/luther/Projects/CTextSearch/build",
+  "command": "/usr/bin/cc  -I/home/luther/Projects/CTextSearch/inc -g -std=gnu11 -o CMakeFiles/text_search.dir/src/array_list.c.o -c /home/luther/Projects/CTextSearch/src/array_list.c",
+  "file": "/home/luther/Projects/CTextSearch/src/array_list.c",
+  "output": "CMakeFiles/text_search.dir/src/array_list.c.o"
+},
+{
+  "directory": "/home/luther/Projects/CTextSearch/build",
+  "command": "/usr/bin/cc  -I/home/luther/Projects/CTextSearch/inc -g -std=gnu11 -o CMakeFiles/text_search.dir/src/builder_hashmap.c.o -c /home/luther/Projects/CTextSearch/src/builder_hashmap.c",
+  "file": "/home/luther/Projects/CTextSearch/src/builder_hashmap.c",
+  "output": "CMakeFiles/text_search.dir/src/builder_hashmap.c.o"
+},
+{
+  "directory": "/home/luther/Projects/CTextSearch/build",
+  "command": "/usr/bin/cc  -I/home/luther/Projects/CTextSearch/inc -g -std=gnu11 -o CMakeFiles/text_search.dir/src/main.c.o -c /home/luther/Projects/CTextSearch/src/main.c",
+  "file": "/home/luther/Projects/CTextSearch/src/main.c",
+  "output": "CMakeFiles/text_search.dir/src/main.c.o"
+}
+]
