@@ -1,5 +1,4 @@
 #include "array_list.h"
-#include "index_builder.h"
 #include "text_search.h"
 #include <dirent.h>
 #include <stdio.h>
@@ -21,10 +20,9 @@ static const char *get_document_name(const TextSearchIndex *tsi, uint32_t doc_id
     return "Unknown";
 }
 
-int main() {
-    TextSearchIndex *tsi = tsi_create();
+static int index_directory(TextSearchIndex *tsi, const char *dir_path) {
+    DIR *dir = opendir(dir_path);
     struct dirent *entry;
-    DIR *dir = opendir("docs");
 
     if (dir == NULL) {
         printf("Could not open the docs directory.\n"
@@ -73,7 +71,10 @@ int main() {
         array_free(file_buf);
     }
     closedir(dir);
+    return 0;
+}
 
+static int query_user_search(const TextSearchIndex *tsi) {
     // Let the users search the documents now!
     bool is_running = true;
     char *input_buf = calloc(512, sizeof(char));
@@ -112,7 +113,20 @@ int main() {
     }
 
     free(input_buf);
-    tsi_destroy(tsi);
+    return 0;
+}
 
+int main() {
+    TextSearchIndex *tsi = tsi_create();
+
+    if (index_directory(tsi, "docs") != 0) {
+        return 1;
+    }
+
+    if (query_user_search(tsi) != 0) {
+        return 1;
+    }
+
+    tsi_destroy(tsi);
     return 0;
 }

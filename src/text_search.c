@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+static inline bool is_valid_token_char(char c) { return isalnum((unsigned char)c) || (unsigned char)c == '\''; }
+
 TextSearchIndex *tsi_create() {
     TextSearchIndex *tsi = malloc(sizeof(TextSearchIndex));
     if (tsi == NULL) {
@@ -33,7 +35,7 @@ TextSearchIndex *tsi_create() {
 
 // Returns true if a new token has been parsed
 // false signifies that the end of the document has been reached
-bool next_token(const char *text, size_t *cursor, Token *token) {
+static bool next_token(const char *text, size_t *cursor, Token *token) {
     // Skip leading delimiters (whitespace, punctuation, etc.)
     while (text[*cursor] != '\0' && !is_valid_token_char(text[*cursor])) {
         (*cursor)++;
@@ -110,7 +112,9 @@ void tsi_index_document(TextSearchIndex *tsi, const char *name, const char *text
     array_push(tsi->documents, &doc);
 }
 
-TextSearchWordEntry *tsi_search_word(TextSearchIndex *tsi, const char *query) { return hashmap_get(tsi->map, query); }
+TextSearchWordEntry *tsi_search_word(const TextSearchIndex *tsi, const char *query) {
+    return hashmap_get(tsi->map, query);
+}
 
 void tsi_destroy(TextSearchIndex *tsi) {
     if (tsi != NULL) {
@@ -126,11 +130,4 @@ void tsi_destroy(TextSearchIndex *tsi) {
         hashmap_destroy(tsi->map);
         free(tsi);
     }
-}
-
-inline bool is_valid_token_char(char c) {
-    if (isalnum((unsigned char)c) || (unsigned char)c == '\'') {
-        return true;
-    }
-    return false;
 }

@@ -57,7 +57,20 @@ typedef struct {
     size_t posting_count;
 } WordEntry;
 
-bool next_token(const char *text, size_t *cursor, Token *token);
-bool is_valid_token_char(const char c);
+// FLattened index for better cache locality
+// This gets created after tsi_finalize() is called
+typedef struct {
+    WordEntry *word_entries; // Array of all unique words
+    size_t word_count;
+
+    Posting *postings; // Contiguous array of all document matches
+    size_t posting_count;
+
+    uint64_t *offsets; // Contiguous array of all positional offsets
+    size_t offset_count;
+
+    char *string_arena; // Contiguous buffer of all token strings
+    size_t string_arena_size;
+} FlatTextIndex;
 
 #endif

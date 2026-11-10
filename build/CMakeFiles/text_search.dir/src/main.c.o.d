@@ -2,6 +2,8 @@ CMakeFiles/text_search.dir/src/main.c.o: \
  /home/luther/Projects/CTextSearch/src/main.c /usr/include/stdc-predef.h \
  /home/luther/Projects/CTextSearch/inc/array_list.h \
  /usr/lib/gcc/x86_64-linux-gnu/15/include/stddef.h \
+ /home/luther/Projects/CTextSearch/inc/text_search.h \
+ /home/luther/Projects/CTextSearch/inc/array_list.h \
  /home/luther/Projects/CTextSearch/inc/index_builder.h \
  /usr/lib/gcc/x86_64-linux-gnu/15/include/stdbool.h \
  /usr/lib/gcc/x86_64-linux-gnu/15/include/stdint.h /usr/include/stdint.h \
@@ -19,11 +21,8 @@ CMakeFiles/text_search.dir/src/main.c.o: \
  /usr/include/x86_64-linux-gnu/bits/wchar.h \
  /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
- /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
- /home/luther/Projects/CTextSearch/inc/text_search.h \
- /home/luther/Projects/CTextSearch/inc/array_list.h \
- /home/luther/Projects/CTextSearch/inc/index_builder.h \
- /usr/include/dirent.h /usr/include/x86_64-linux-gnu/bits/dirent.h \
+ /usr/include/x86_64-linux-gnu/bits/stdint-least.h /usr/include/dirent.h \
+ /usr/include/x86_64-linux-gnu/bits/dirent.h \
  /usr/include/x86_64-linux-gnu/bits/posix1_lim.h \
  /usr/include/x86_64-linux-gnu/bits/local_lim.h \
  /usr/include/linux/limits.h \
