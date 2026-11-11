@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define INPUT_BUFFER_SIZE 512
+#define INPUT_BUFFER_SIZE 256
 
 static int index_directory(TextSearchIndex *tsi, const char *dir_path) {
     DIR *dir = opendir(dir_path);

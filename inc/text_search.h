@@ -39,9 +39,9 @@ typedef struct {
 TextSearchIndex *tsi_create();
 void tsi_destroy(TextSearchIndex *index);
 void tsi_index_document(TextSearchIndex *tsi, const char *name, const char *text);
-bool tsi_finalize(TextSearchIndex *tsi);
-bool tsi_serialize_to_disk(TextSearchIndex *tsi, char *file_path);
-bool tsi_load_from_disk(TextSearchIndex *tsi, char *file_path);
+int tsi_finalize(TextSearchIndex *tsi);
+int tsi_serialize_to_disk(TextSearchIndex *tsi, char *file_path);
+int tsi_load_from_disk(TextSearchIndex *tsi, char *file_path);
 TextSearchResult *tsi_search_word(const TextSearchIndex *tsi, const char *word);
 void tsi_free_result(TextSearchResult *result);
 

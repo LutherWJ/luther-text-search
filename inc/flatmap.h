@@ -33,22 +33,47 @@ typedef struct {
     uint32_t posting_count; // Number of documents containing this term
 } FlatTerm;
 
+typedef struct {
+    uint32_t magic;
+    uint32_t version;
+
+    // Counts
+    uint32_t doc_count;
+    uint32_t term_capacity;
+    uint32_t posting_count;
+    uint32_t offset_count;
+    uint32_t string_arena_size;
+
+    // Byte offsets from the start of the buffer/file
+    uint32_t docs_offset;
+    uint32_t terms_offset;
+    uint32_t postings_offset;
+    uint32_t offsets_offset;
+    uint32_t strings_offset;
+
+    uint32_t total_file_size;
+} IndexHeader;
+
 // The single, contiguous read-only index
 typedef struct {
-    size_t doc_count;
-    FlatDoc *docs; // Array of documents
-
-    size_t term_capacity;
-    FlatTerm *terms; // Flat hash table
-
-    size_t posting_count;
+    // View pointers
+    FlatDoc *docs;         // Array of documents
+    FlatTerm *terms;       // Flat hash table
     FlatPosting *postings; // Contiguous postings
+    uint64_t *offsets;     // Contiguous raw offsets
+    char *strings;         // All strings packed together
 
-    size_t offset_count;
-    uint64_t *offsets; // Contiguous raw offsets
+    // Counts
+    size_t doc_count;     // Count of documents indexed
+    size_t term_capacity; // Max capacity (NOT COUNT) of the term hashmap
+    size_t posting_count; // Total amount of postings
+    size_t offset_count;  // Total amount of offsets
+    size_t strings_size;  // Total length of the strings array
 
-    size_t string_arena_size;
-    char *string_arena; // All strings packed together
+    // Single allocation where the data actually lives
+    void *blob;       // Base pointer to the arena
+    size_t blob_size; // Total allocation size
+    bool is_mmap;     // true if loaded via mmap, false if malloc
 } FlatIndex;
 
 FlatIndex *flatmap_create(IndexBuilder *builder);

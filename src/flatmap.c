@@ -1,6 +1,7 @@
 #include "flatmap.h"
 #include "builder_hashmap.h"
 #include "index_builder.h"
+#include <stdalign.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -11,49 +12,41 @@ FlatIndex *flatmap_create(IndexBuilder *builder) {
     }
 
     // All of our data will be held on a single allocation for better cache locality
-    size_t str_arena_size = builder->total_doc_name_bytes + builder->total_string_bytes;
-    char *str_arena = malloc(str_arena_size * sizeof(char));
-    if (str_arena == NULL) {
+    // We start by calculating our sizes
+    alignas(8) size_t str_size = (builder->total_doc_name_bytes + builder->total_string_bytes) * sizeof(char);
+    alignas(8) size_t doc_size = builder->docs->count * sizeof(FlatDoc);
+    // We use capacity here to keep the term array as a hashmap with 70% load factor.
+    alignas(8) size_t term_size = builder->capacity * sizeof(FlatTerm);
+    alignas(8) size_t posting_size = builder->total_postings * sizeof(FlatPosting);
+    alignas(8) size_t offset_size = builder->total_offsets * sizeof(size_t);
+
+    size_t blob_size = str_size + doc_size + term_size + posting_size + offset_size;
+    flatmap->blob = malloc(blob_size);
+    if (flatmap->blob == NULL) {
         free(flatmap);
         return NULL;
     }
 
-    FlatPosting *posting_arena = malloc(builder->total_postings * sizeof(FlatPosting));
-    if (posting_arena == NULL) {
-        free(flatmap);
-        free(str_arena);
-        return NULL;
-    }
+    // Set the view pointers
+    char *base = (char *)flatmap->blob;
+    flatmap->strings = base;
+    flatmap->docs = (FlatDoc *)(base + str_size);
+    flatmap->terms = (FlatTerm *)(base + str_size + doc_size);
+    flatmap->postings = (FlatPosting *)(base + str_size + doc_size + term_size);
+    flatmap->offsets = (size_t *)(base + str_size + doc_size + term_size + posting_size);
 
-    size_t *offset_arena = malloc(builder->total_offsets * sizeof(size_t));
-    if (offset_arena == NULL) {
-        free(flatmap);
-        free(str_arena);
-        free(posting_arena);
-        return NULL;
-    }
+    // Set the counts
+    flatmap->strings_size = str_size;
+    flatmap->doc_count = builder->docs->count;
+    flatmap->term_capacity = builder->capacity;
+    flatmap->posting_count = builder->total_postings;
+    flatmap->offset_count = builder->total_offsets;
 
-    FlatDoc *doc_arena = malloc(builder->docs->count * sizeof(FlatDoc));
-    if (doc_arena == NULL) {
-        free(flatmap);
-        free(str_arena);
-        free(posting_arena);
-        free(offset_arena);
-        return NULL;
-    }
-
-    FlatTerm *term_map = calloc(builder->capacity, sizeof(FlatTerm));
-    if (term_map == NULL) {
-        free(flatmap);
-        free(str_arena);
-        free(posting_arena);
-        free(offset_arena);
-        free(doc_arena);
-        return NULL;
-    }
+    // Set the metadata!
+    flatmap->is_mmap = false;
 
     // cursors keeps our position so we know where to put the next value in the arena
-    char *str_cursor = str_arena;
+    char *str_cursor = flatmap->strings;
     size_t posting_cursor = 0;
     size_t offset_cursor = 0;
     // Populate the flatmap
@@ -66,14 +59,14 @@ FlatIndex *flatmap_create(IndexBuilder *builder) {
             uint64_t key_hash = hash(bucket->token_string);
             size_t index = key_hash % builder->capacity;
 
-            while (term_map[index].hash != 0) {
+            while (flatmap->terms[index].hash != 0) {
                 index = (index + 1) % builder->capacity;
             }
 
-            term_map[index] = (FlatTerm){
+            flatmap->terms[index] = (FlatTerm){
                 .hash = key_hash,
                 .string_len = len,
-                .string_offset = str_cursor - str_arena,
+                .string_offset = str_cursor - flatmap->strings,
                 .posting_count = bucket->postings->count,
                 .posting_start = posting_cursor,
             };
@@ -86,14 +79,15 @@ FlatIndex *flatmap_create(IndexBuilder *builder) {
             // Copy the postings
             for (size_t j = 0; j < bucket->postings->count; j++) {
                 BuildPosting *posting = array_get(bucket->postings, j);
-                posting_arena[posting_cursor++] = (FlatPosting){
+                flatmap->postings[posting_cursor++] = (FlatPosting){
                     .doc_id = posting->doc_id,
                     .offset_start = offset_cursor,
                     .offset_count = posting->offsets->count,
                 };
 
                 // Copy the offsets
-                memcpy(offset_arena + offset_cursor, posting->offsets->data, posting->offsets->count * sizeof(size_t));
+                memcpy(flatmap->offsets + offset_cursor, posting->offsets->data,
+                       posting->offsets->count * sizeof(size_t));
                 offset_cursor += posting->offsets->count;
             }
         }
@@ -104,40 +98,23 @@ FlatIndex *flatmap_create(IndexBuilder *builder) {
         BuildDoc *doc = array_get(builder->docs, i);
         size_t n = strlen(doc->name);
         memcpy(str_cursor, doc->name, n);
-        doc_arena[i] = (FlatDoc){
+        flatmap->docs[i] = (FlatDoc){
             .doc_id = doc->doc_id,
-            .name_offset = (size_t)(str_cursor - str_arena),
+            .name_offset = (size_t)(str_cursor - flatmap->strings),
             .total_words = doc->total_words,
         };
         str_cursor[n] = '\0';
         str_cursor += n + 1;
     }
 
-    flatmap->string_arena = str_arena;
-    flatmap->string_arena_size = str_arena_size;
-    flatmap->postings = posting_arena;
-    flatmap->posting_count = builder->total_postings;
-    flatmap->offsets = offset_arena;
-    flatmap->offset_count = builder->total_offsets;
-    flatmap->docs = doc_arena;
-    flatmap->doc_count = builder->docs->count;
-    flatmap->terms = term_map;
-    flatmap->term_capacity = builder->capacity;
-
     return flatmap;
 }
 
 void flatmap_destroy(FlatIndex *flatmap) {
-    if (flatmap == NULL) {
-        return;
+    if (flatmap != NULL) {
+        free(flatmap->blob);
+        free(flatmap);
     }
-
-    free(flatmap->postings);
-    free(flatmap->terms);
-    free(flatmap->string_arena);
-    free(flatmap->docs);
-    free(flatmap->offsets);
-    free(flatmap);
 }
 
 FlatTerm *flatmap_get(FlatIndex *flatmap, const char *key) {

@@ -35,22 +35,6 @@ static bool next_token(const char *text, size_t *cursor, Token *token) {
     return true;
 }
 
-TextSearchIndex *tsi_create() {
-    TextSearchIndex *tsi = malloc(sizeof(TextSearchIndex));
-    if (tsi == NULL) {
-        return NULL;
-    }
-
-    tsi->is_final = false;
-    tsi->builder = hashmap_create(HASHMAP_INIT_CAPACITY);
-    if (tsi->builder == NULL) {
-        free(tsi);
-        return NULL;
-    }
-
-    return tsi;
-}
-
 static BuildTerm *get_or_create_term(IndexBuilder *builder, const char *word) {
     BuildTerm *term = hashmap_get(builder, word);
     if (term != NULL) {
@@ -97,6 +81,22 @@ static BuildPosting *get_or_create_posting(IndexBuilder *builder, BuildTerm *ter
     return array_get(term->postings, term->postings->count - 1);
 }
 
+TextSearchIndex *tsi_create() {
+    TextSearchIndex *tsi = malloc(sizeof(TextSearchIndex));
+    if (tsi == NULL) {
+        return NULL;
+    }
+
+    tsi->is_final = false;
+    tsi->builder = hashmap_create(HASHMAP_INIT_CAPACITY);
+    if (tsi->builder == NULL) {
+        free(tsi);
+        return NULL;
+    }
+
+    return tsi;
+}
+
 void tsi_index_document(TextSearchIndex *tsi, const char *name, const char *text) {
     if (tsi->is_final) {
         return;
@@ -115,7 +115,7 @@ void tsi_index_document(TextSearchIndex *tsi, const char *name, const char *text
         doc.total_words++;
 
         // Slice word into a stack buffer
-        char word[128];
+        char word[256];
         snprintf(word, sizeof(word), "%.*s", (int)token.length, token.start);
 
         BuildTerm *term = get_or_create_term(tsi->builder, word);
@@ -128,6 +128,24 @@ void tsi_index_document(TextSearchIndex *tsi, const char *name, const char *text
 
     array_push(tsi->builder->docs, &doc);
     tsi->builder->total_doc_name_bytes += strlen(name) + 1;
+}
+
+int tsi_finalize(TextSearchIndex *tsi) {
+    FlatIndex *flatmap = flatmap_create(tsi->builder);
+    if (flatmap == NULL) {
+        return 1;
+    }
+
+    hashmap_destroy(tsi->builder);
+
+    tsi->flatmap = flatmap;
+    tsi->is_final = true;
+    return false;
+}
+
+int tsi_serialize_to_disk(TextSearchIndex *tsi, char *path) {
+    tsi->flatmap;
+    return 0;
 }
 
 TextSearchResult *tsi_search_word(const TextSearchIndex *tsi, const char *query) {
@@ -145,7 +163,7 @@ TextSearchResult *tsi_search_word(const TextSearchIndex *tsi, const char *query)
         return NULL;
     }
 
-    result->query = tsi->flatmap->string_arena + term->string_offset; // Pointer arithmatic to word!
+    result->query = tsi->flatmap->strings + term->string_offset; // Pointer arithmatic to word!
     result->match_count = term->posting_count;
     result->matches = malloc(term->posting_count * sizeof(TextSearchMatch));
     if (result->matches == NULL) {
@@ -158,7 +176,7 @@ TextSearchResult *tsi_search_word(const TextSearchIndex *tsi, const char *query)
         FlatDoc *doc = &tsi->flatmap->docs[posting->doc_id - 1];
         result->matches[i] = (TextSearchMatch){
             .doc_id = posting->doc_id,
-            .doc_name = tsi->flatmap->string_arena + doc->name_offset,
+            .doc_name = tsi->flatmap->strings + doc->name_offset,
             .offsets = tsi->flatmap->offsets + posting->offset_start,
             .offset_count = posting->offset_count,
         };
@@ -181,17 +199,4 @@ void tsi_destroy(TextSearchIndex *tsi) {
         hashmap_destroy(tsi->builder);
     }
     free(tsi);
-}
-
-bool tsi_finalize(TextSearchIndex *tsi) {
-    FlatIndex *flatmap = flatmap_create(tsi->builder);
-    if (flatmap == NULL) {
-        return false;
-    }
-
-    hashmap_destroy(tsi->builder);
-
-    tsi->flatmap = flatmap;
-    tsi->is_final = true;
-    return true;
 }
