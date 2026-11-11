@@ -1,3 +1,0 @@
-/home/luther/Projects/CTextSearch/build/CMakeFiles/text_search.dir
-/home/luther/Projects/CTextSearch/build/CMakeFiles/edit_cache.dir
-/home/luther/Projects/CTextSearch/build/CMakeFiles/rebuild_cache.dir
