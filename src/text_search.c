@@ -1,6 +1,7 @@
 #include "text_search.h"
 #include "array_list.h"
 #include "builder_hashmap.h"
+#include "flatmap.h"
 #include "index_builder.h"
 #include <ctype.h>
 #include <stdio.h>
@@ -8,30 +9,6 @@
 #include <string.h>
 
 static inline bool is_valid_token_char(char c) { return isalnum((unsigned char)c) || (unsigned char)c == '\''; }
-
-TextSearchIndex *tsi_create() {
-    TextSearchIndex *tsi = malloc(sizeof(TextSearchIndex));
-    if (tsi == NULL) {
-        return NULL;
-    }
-
-    ArrayList *document_list = array_create(sizeof(DocumentRecord), ARRAYLIST_INIT_CAPACITY);
-    if (document_list == NULL) {
-        free(tsi);
-        return NULL;
-    }
-    tsi->documents = document_list;
-
-    tsi->map = hashmap_create(HASHMAP_INIT_CAPACITY);
-    if (tsi->map == NULL) {
-        array_free(document_list);
-        free(tsi);
-        return NULL;
-    }
-
-    tsi->active_docs = 0;
-    return tsi;
-}
 
 // Returns true if a new token has been parsed
 // false signifies that the end of the document has been reached
@@ -58,76 +35,163 @@ static bool next_token(const char *text, size_t *cursor, Token *token) {
     return true;
 }
 
+TextSearchIndex *tsi_create() {
+    TextSearchIndex *tsi = malloc(sizeof(TextSearchIndex));
+    if (tsi == NULL) {
+        return NULL;
+    }
+
+    tsi->is_final = false;
+    tsi->builder = hashmap_create(HASHMAP_INIT_CAPACITY);
+    if (tsi->builder == NULL) {
+        free(tsi);
+        return NULL;
+    }
+
+    return tsi;
+}
+
+static BuildTerm *get_or_create_term(IndexBuilder *builder, const char *word) {
+    BuildTerm *term = hashmap_get(builder, word);
+    if (term != NULL) {
+        // Term has been found before, return it.
+        return term;
+    }
+
+    // First occurence of the word in the hashmap.
+    BuildTerm new_term = {
+        .token_string = strdup(word),
+        .hash = hash(word),
+        .postings = array_create(sizeof(BuildPosting), ARRAYLIST_INIT_CAPACITY),
+    };
+    builder->total_string_bytes += strlen(word) + 1;
+
+    hashmap_insert(builder, &new_term);
+    return hashmap_get(builder, word);
+}
+
+static BuildPosting *get_or_create_posting(IndexBuilder *builder, BuildTerm *term, uint32_t doc_id) {
+    if (term->postings->count > 0) {
+        // Word has been found in this document before
+        BuildPosting *posting = array_get(term->postings, term->postings->count - 1);
+        if (posting->doc_id == doc_id) {
+            return posting;
+        }
+    }
+
+    // First occurence of the word in this document
+    BuildPosting new_posting = {
+        .doc_id = doc_id,
+        .offsets = array_create(sizeof(size_t), ARRAYLIST_INIT_CAPACITY),
+    };
+    builder->total_postings++;
+
+    if (new_posting.offsets == NULL) {
+        return NULL;
+    }
+
+    if (array_push(term->postings, &new_posting)) {
+        return NULL;
+    }
+
+    return array_get(term->postings, term->postings->count - 1);
+}
+
 void tsi_index_document(TextSearchIndex *tsi, const char *name, const char *text) {
+    if (tsi->is_final) {
+        return;
+    }
+
     // Initialization!
-    DocumentRecord doc;
-    doc.doc_id = tsi->documents->count ? *((uint32_t *)array_get(tsi->documents, tsi->documents->count - 1)) + 1 : 1;
+    BuildDoc doc;
+    doc.doc_id =
+        tsi->builder->docs->count ? *((uint32_t *)array_get(tsi->builder->docs, tsi->builder->docs->count - 1)) + 1 : 1;
     doc.name = strdup(name);
-    doc.content_hash = hash(text);
     doc.total_words = 0;
-    doc.is_deleted = false;
 
     size_t cursor = 0;
     Token token;
     while (next_token(text, &cursor, &token)) {
         doc.total_words++;
 
-        // slice the word
-        char *word = malloc(sizeof(char) * token.length + 1);
-        strncpy(word, token.start, token.length);
-        word[token.length] = '\0';
+        // Slice word into a stack buffer
+        char word[128];
+        snprintf(word, sizeof(word), "%.*s", (int)token.length, token.start);
 
-        // Update the hashmap
-        // This if else chain looks scary but its just checking whether the word already exists in the hashmap
-        TextSearchWordEntry *entry = hashmap_get(tsi->map, word);
-        if (entry != NULL) {
-            // Word already exists in the hashmap, so just get the pointer and update the bucket
-            TextSearchPosting *last_posting = NULL;
-            if (entry->matches->count > 0) {
-                last_posting = array_get(entry->matches, entry->matches->count - 1);
-            }
+        BuildTerm *term = get_or_create_term(tsi->builder, word);
 
-            if (last_posting != NULL && last_posting->doc_id == doc.doc_id) {
-                // Word already has been found once in the document, push the new offset.
-                array_push(last_posting->offsets, &token.byte_offset);
-            } else {
-                // First occurence of the word in this document
-                TextSearchPosting new_posting = {.doc_id = doc.doc_id,
-                                                 .offsets = array_create(sizeof(size_t), ARRAYLIST_INIT_CAPACITY)};
-                array_push(new_posting.offsets, &token.byte_offset);
-                array_push(entry->matches, &new_posting);
-            }
-            free(word);
-        } else {
-            // First occurrence of this word in the index, needs a whole new entry
-            TextSearchWordEntry new_entry = {
-                .token_string = word, .matches = array_create(sizeof(TextSearchPosting), ARRAYLIST_INIT_CAPACITY)};
-            TextSearchPosting new_posting = {.doc_id = doc.doc_id,
-                                             .offsets = array_create(sizeof(size_t), ARRAYLIST_INIT_CAPACITY)};
-            array_push(new_posting.offsets, &token.byte_offset);
-            array_push(new_entry.matches, &new_posting);
-            hashmap_insert(tsi->map, &new_entry);
-        }
+        BuildPosting *posting = get_or_create_posting(tsi->builder, term, doc.doc_id);
+
+        array_push(posting->offsets, &token.byte_offset);
+        tsi->builder->total_offsets++;
     }
-    array_push(tsi->documents, &doc);
+
+    array_push(tsi->builder->docs, &doc);
+    tsi->builder->total_doc_name_bytes += strlen(name) + 1;
 }
 
-TextSearchWordEntry *tsi_search_word(const TextSearchIndex *tsi, const char *query) {
-    return hashmap_get(tsi->map, query);
+TextSearchResult *tsi_search_word(const TextSearchIndex *tsi, const char *query) {
+    if (!tsi->is_final) {
+        return NULL;
+    }
+
+    FlatTerm *term = flatmap_get(tsi->flatmap, query);
+    if (term == NULL) {
+        return NULL;
+    }
+
+    TextSearchResult *result = malloc(sizeof(TextSearchResult));
+    if (result == NULL) {
+        return NULL;
+    }
+
+    result->query = tsi->flatmap->string_arena + term->string_offset; // Pointer arithmatic to word!
+    result->match_count = term->posting_count;
+    result->matches = malloc(term->posting_count * sizeof(TextSearchMatch));
+    if (result->matches == NULL) {
+        free(result);
+        return NULL;
+    }
+
+    for (size_t i = 0; i < term->posting_count; i++) {
+        FlatPosting *posting = &tsi->flatmap->postings[term->posting_start + i];
+        FlatDoc *doc = &tsi->flatmap->docs[posting->doc_id - 1];
+        result->matches[i] = (TextSearchMatch){
+            .doc_id = posting->doc_id,
+            .doc_name = tsi->flatmap->string_arena + doc->name_offset,
+            .offsets = tsi->flatmap->offsets + posting->offset_start,
+            .offset_count = posting->offset_count,
+        };
+    }
+
+    return result;
+}
+
+void tsi_free_result(TextSearchResult *result) {
+    if (result != NULL) {
+        free(result->matches);
+        free(result);
+    }
 }
 
 void tsi_destroy(TextSearchIndex *tsi) {
-    if (tsi != NULL) {
-        if (tsi->documents != NULL) {
-            for (size_t i = 0; i < tsi->documents->count; i++) {
-                DocumentRecord *doc = array_get(tsi->documents, i);
-                if (doc != NULL && doc->name != NULL) {
-                    free(doc->name);
-                }
-            }
-            array_free(tsi->documents);
-        }
-        hashmap_destroy(tsi->map);
-        free(tsi);
+    if (tsi->is_final) {
+        flatmap_destroy(tsi->flatmap);
+    } else {
+        hashmap_destroy(tsi->builder);
     }
+    free(tsi);
+}
+
+bool tsi_finalize(TextSearchIndex *tsi) {
+    FlatIndex *flatmap = flatmap_create(tsi->builder);
+    if (flatmap == NULL) {
+        return false;
+    }
+
+    hashmap_destroy(tsi->builder);
+
+    tsi->flatmap = flatmap;
+    tsi->is_final = true;
+    return true;
 }

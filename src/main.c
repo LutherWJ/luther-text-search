@@ -7,19 +7,6 @@
 
 #define INPUT_BUFFER_SIZE 512
 
-static const char *get_document_name(const TextSearchIndex *tsi, uint32_t doc_id) {
-    if (tsi == NULL || tsi->documents == NULL) {
-        return "Unknown";
-    }
-    for (size_t i = 0; i < tsi->documents->count; i++) {
-        DocumentRecord *doc = array_get(tsi->documents, i);
-        if (doc != NULL && doc->doc_id == doc_id) {
-            return doc->name;
-        }
-    }
-    return "Unknown";
-}
-
 static int index_directory(TextSearchIndex *tsi, const char *dir_path) {
     DIR *dir = opendir(dir_path);
     struct dirent *entry;
@@ -91,27 +78,23 @@ static int query_user_search(const TextSearchIndex *tsi) {
         }
 
         // Perform the search
-        TextSearchWordEntry *result = tsi_search_word(tsi, input_buf);
+        TextSearchResult *result = tsi_search_word(tsi, input_buf);
 
-        // Display results:
-        if (result == NULL || result->matches == NULL || result->matches->count == 0) {
+        // Print Results
+        if (result == NULL) {
             printf("No results found.\n");
         } else {
-            printf("Showing results for \"%s\" in %zu document(s):\n", result->token_string, result->matches->count);
-            for (size_t i = 0; i < result->matches->count; i++) {
-                TextSearchPosting *posting = array_get(result->matches, i);
-                const char *doc_name = get_document_name(tsi, posting->doc_id);
-                printf("Result #%zu:\nDocument Name: %s\n", i + 1, doc_name);
-                if (posting->offsets != NULL) {
-                    for (size_t j = 0; j < posting->offsets->count; j++) {
-                        size_t *offset = array_get(posting->offsets, j);
-                        printf(" Starting at character %zu\n", *offset);
-                    }
+            printf("Showing results for \"%s\" in %zu doc(s):\n", result->query, result->match_count);
+            for (size_t i = 0; i < result->match_count; i++) {
+                TextSearchMatch *m = &result->matches[i];
+                printf("Result #%zu: Document: %s\n", i + 1, m->doc_name);
+                for (size_t j = 0; j < m->offset_count; j++) {
+                    printf("  Character %lu\n", m->offsets[j]);
                 }
             }
+            tsi_free_result(result);
         }
     }
-
     free(input_buf);
     return 0;
 }
@@ -122,6 +105,8 @@ int main() {
     if (index_directory(tsi, "docs") != 0) {
         return 1;
     }
+
+    tsi_finalize(tsi);
 
     if (query_user_search(tsi) != 0) {
         return 1;

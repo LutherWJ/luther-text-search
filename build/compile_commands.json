@@ -19,6 +19,12 @@
 },
 {
   "directory": "/home/luther/Projects/CTextSearch/build",
+  "command": "/usr/bin/cc  -I/home/luther/Projects/CTextSearch/inc -g -std=gnu11 -o CMakeFiles/text_search.dir/src/flatmap.c.o -c /home/luther/Projects/CTextSearch/src/flatmap.c",
+  "file": "/home/luther/Projects/CTextSearch/src/flatmap.c",
+  "output": "CMakeFiles/text_search.dir/src/flatmap.c.o"
+},
+{
+  "directory": "/home/luther/Projects/CTextSearch/build",
   "command": "/usr/bin/cc  -I/home/luther/Projects/CTextSearch/inc -g -std=gnu11 -o CMakeFiles/text_search.dir/src/main.c.o -c /home/luther/Projects/CTextSearch/src/main.c",
   "file": "/home/luther/Projects/CTextSearch/src/main.c",
   "output": "CMakeFiles/text_search.dir/src/main.c.o"

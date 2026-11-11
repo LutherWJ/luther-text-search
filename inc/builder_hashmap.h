@@ -8,17 +8,27 @@
 #define FNV_PRIME             0x100000001b3
 #define HASHMAP_INIT_CAPACITY 128
 
-struct IndexBuilderMap {
-    TextSearchWordEntry *buckets;
+struct IndexBuilder {
+    // Hashmap
+    BuildTerm *buckets;
     size_t count;
     size_t capacity;
+
+    // Docs
+    ArrayList *docs; // ArrayList of BuildDoc
+
+    // Metadata
+    size_t total_string_bytes;
+    size_t total_postings;
+    size_t total_offsets;
+    size_t total_doc_name_bytes;
 };
 
-IndexBuilderMap *hashmap_create(size_t init_capacity);
-void hashmap_destroy(IndexBuilderMap *map);
-int hashmap_insert(IndexBuilderMap *map, const TextSearchWordEntry *item);
-int hashmap_resize(IndexBuilderMap *map, size_t new_capacity);
-TextSearchWordEntry *hashmap_get(IndexBuilderMap *map, const char *key);
+IndexBuilder *hashmap_create(size_t init_capacity);
+void hashmap_destroy(IndexBuilder *map);
+int hashmap_insert(IndexBuilder *map, const BuildTerm *item);
+int hashmap_resize(IndexBuilder *map, size_t new_capacity);
+BuildTerm *hashmap_get(IndexBuilder *map, const char *key);
 uint64_t hash(const char *str);
 
 #endif

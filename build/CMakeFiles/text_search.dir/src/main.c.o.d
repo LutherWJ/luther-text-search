@@ -3,7 +3,7 @@ CMakeFiles/text_search.dir/src/main.c.o: \
  /home/luther/Projects/CTextSearch/inc/array_list.h \
  /usr/lib/gcc/x86_64-linux-gnu/15/include/stddef.h \
  /home/luther/Projects/CTextSearch/inc/text_search.h \
- /home/luther/Projects/CTextSearch/inc/array_list.h \
+ /home/luther/Projects/CTextSearch/inc/flatmap.h \
  /home/luther/Projects/CTextSearch/inc/index_builder.h \
  /usr/lib/gcc/x86_64-linux-gnu/15/include/stdbool.h \
  /usr/lib/gcc/x86_64-linux-gnu/15/include/stdint.h /usr/include/stdint.h \

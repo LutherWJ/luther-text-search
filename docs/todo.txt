@@ -2,3 +2,4 @@
 - Data flattening and serialization after indexing
 - Figure out what this API is going to be and how we hide flattened data structures vs builder structures
 - Merging flattened results with new builder output
+- lol lol lmao lol

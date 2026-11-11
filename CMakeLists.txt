@@ -11,6 +11,7 @@ target_sources(text_search PRIVATE
     src/text_search.c
     src/array_list.c 
     src/builder_hashmap.c
+    src/flatmap.c
     src/main.c
 )
 

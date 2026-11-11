@@ -177,6 +177,30 @@ src/builder_hashmap.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/text_search.dir/build.make CMakeFiles/text_search.dir/src/builder_hashmap.c.s
 .PHONY : src/builder_hashmap.c.s
 
+src/flatmap.o: src/flatmap.c.o
+.PHONY : src/flatmap.o
+
+# target to build an object file
+src/flatmap.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/text_search.dir/build.make CMakeFiles/text_search.dir/src/flatmap.c.o
+.PHONY : src/flatmap.c.o
+
+src/flatmap.i: src/flatmap.c.i
+.PHONY : src/flatmap.i
+
+# target to preprocess a source file
+src/flatmap.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/text_search.dir/build.make CMakeFiles/text_search.dir/src/flatmap.c.i
+.PHONY : src/flatmap.c.i
+
+src/flatmap.s: src/flatmap.c.s
+.PHONY : src/flatmap.s
+
+# target to generate assembly for a file
+src/flatmap.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/text_search.dir/build.make CMakeFiles/text_search.dir/src/flatmap.c.s
+.PHONY : src/flatmap.c.s
+
 src/main.o: src/main.c.o
 .PHONY : src/main.o
 
@@ -240,6 +264,9 @@ help:
 	@echo "... src/builder_hashmap.o"
 	@echo "... src/builder_hashmap.i"
 	@echo "... src/builder_hashmap.s"
+	@echo "... src/flatmap.o"
+	@echo "... src/flatmap.i"
+	@echo "... src/flatmap.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"

@@ -4,3 +4,6 @@ IndentWidth: 4
 
 AlignConsecutiveMacros: Consecutive
 AlignTrailingComments: true
+
+# Keep struct initializers expanded across multiple lines
+Cpp11BracedListStyle: false

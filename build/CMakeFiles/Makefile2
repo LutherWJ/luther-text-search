@@ -85,12 +85,12 @@ clean: CMakeFiles/text_search.dir/clean
 CMakeFiles/text_search.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/text_search.dir/build.make CMakeFiles/text_search.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/text_search.dir/build.make CMakeFiles/text_search.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/luther/Projects/CTextSearch/build/CMakeFiles --progress-num=1,2,3,4,5 "Built target text_search"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/luther/Projects/CTextSearch/build/CMakeFiles --progress-num=1,2,3,4,5,6 "Built target text_search"
 .PHONY : CMakeFiles/text_search.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/text_search.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/luther/Projects/CTextSearch/build/CMakeFiles 5
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/luther/Projects/CTextSearch/build/CMakeFiles 6
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/text_search.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/luther/Projects/CTextSearch/build/CMakeFiles 0
 .PHONY : CMakeFiles/text_search.dir/rule
@@ -102,7 +102,7 @@ text_search: CMakeFiles/text_search.dir/rule
 # codegen rule for target.
 CMakeFiles/text_search.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/text_search.dir/build.make CMakeFiles/text_search.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/luther/Projects/CTextSearch/build/CMakeFiles --progress-num=1,2,3,4,5 "Finished codegen for target text_search"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/luther/Projects/CTextSearch/build/CMakeFiles --progress-num=1,2,3,4,5,6 "Finished codegen for target text_search"
 .PHONY : CMakeFiles/text_search.dir/codegen
 
 # clean rule for target.

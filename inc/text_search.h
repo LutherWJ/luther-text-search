@@ -6,38 +6,43 @@
 #ifndef TEXT_SEARCH_H
 #define TEXT_SEARCH_H
 
-#include "array_list.h"
+#include "flatmap.h"
 #include "index_builder.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-/* we will eventually migrate to this.
 struct TextSearchIndex {
-    bool is_finalized;
+    bool is_final;
     union {
-        IndexBuilderMap *buildmap; // Maps token_string -> TextSearchWordEntry
-        FlatTextIndex *flatmap;    // Flattened, memory optimized immutable version of map
-    } map;
-    ArrayList *documents; // ArrayList of DocumentRecord
-    size_t active_docs;   // Count of non-deleted documents
+        IndexBuilder *builder; // Maps token_string -> BuildEntry and stores index metadata
+        FlatIndex *flatmap;    // Flattened, memory optimized immutable version of map
+    };
 };
-*/
 
-struct TextSearchIndex {
-    IndexBuilderMap *map;   // Maps token_string -> TextSearchWordEntry
-    FlatTextIndex *flatmap; // Flattened, memory optimized immutable version of map
-    ArrayList *documents;   // ArrayList of DocumentRecord
-    size_t active_docs;     // Count of non-deleted documents
-};
+// All occurances of a word within a document
+typedef struct {
+    char *doc_name;
+    uint64_t *offsets; // All position offsets containing the word within the document
+    size_t offset_count;
+    uint32_t doc_id;
+} TextSearchMatch;
+
+// All occurences of a word within an index
+typedef struct {
+    const char *query;        // Searched word
+    TextSearchMatch *matches; // Occurences of a word within a single doc
+    size_t match_count;       // Number of docs with occurences
+} TextSearchResult;
 
 // Library API
 TextSearchIndex *tsi_create();
 void tsi_destroy(TextSearchIndex *index);
 void tsi_index_document(TextSearchIndex *tsi, const char *name, const char *text);
 bool tsi_finalize(TextSearchIndex *tsi);
-bool tsi_serialize_index_to_disk(TextSearchIndex *tsi, char *file_path);
-bool tsi_load_index_from_disk(TextSearchIndex *tsi, char *file_path);
-TextSearchWordEntry *tsi_search_word(const TextSearchIndex *tsi, const char *word);
+bool tsi_serialize_to_disk(TextSearchIndex *tsi, char *file_path);
+bool tsi_load_from_disk(TextSearchIndex *tsi, char *file_path);
+TextSearchResult *tsi_search_word(const TextSearchIndex *tsi, const char *word);
+void tsi_free_result(TextSearchResult *result);
 
 #endif

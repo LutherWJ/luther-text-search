@@ -4,6 +4,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/text_search.dir/src/array_list.c.o.d"
   "CMakeFiles/text_search.dir/src/builder_hashmap.c.o"
   "CMakeFiles/text_search.dir/src/builder_hashmap.c.o.d"
+  "CMakeFiles/text_search.dir/src/flatmap.c.o"
+  "CMakeFiles/text_search.dir/src/flatmap.c.o.d"
   "CMakeFiles/text_search.dir/src/main.c.o"
   "CMakeFiles/text_search.dir/src/main.c.o.d"
   "CMakeFiles/text_search.dir/src/text_search.c.o"

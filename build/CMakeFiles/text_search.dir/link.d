@@ -5,6 +5,7 @@ text_search: \
   CMakeFiles/text_search.dir/src/text_search.c.o \
   CMakeFiles/text_search.dir/src/array_list.c.o \
   CMakeFiles/text_search.dir/src/builder_hashmap.c.o \
+  CMakeFiles/text_search.dir/src/flatmap.c.o \
   CMakeFiles/text_search.dir/src/main.c.o \
   /usr/lib/gcc/x86_64-linux-gnu/15/libgcc.a \
   /usr/lib/gcc/x86_64-linux-gnu/15/libgcc_s.so \
@@ -39,6 +40,8 @@ CMakeFiles/text_search.dir/src/text_search.c.o:
 CMakeFiles/text_search.dir/src/array_list.c.o:
 
 CMakeFiles/text_search.dir/src/builder_hashmap.c.o:
+
+CMakeFiles/text_search.dir/src/flatmap.c.o:
 
 CMakeFiles/text_search.dir/src/main.c.o:
 
