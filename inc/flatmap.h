@@ -2,6 +2,12 @@
 #define FLATMAP_H
 
 #include "index_builder.h"
+#define FOURCC(a, b, c, d)                                                                                             \
+    ((uint32_t)(uint8_t)(a) | ((uint32_t)(uint8_t)(b) << 8) | ((uint32_t)(uint8_t)(c) << 16) |                         \
+     ((uint32_t)(uint8_t)(d) << 24))
+
+#define CTEXTSEARCH_MAGIC_NUMBER   FOURCC('S', 'L', 'V', 'T')
+#define CTEXTSEARCH_VERSION_NUMBER 1
 
 /*
  * Type definitions for our flattened data model

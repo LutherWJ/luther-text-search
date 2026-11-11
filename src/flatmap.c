@@ -20,8 +20,8 @@ FlatIndex *flatmap_create(IndexBuilder *builder) {
     alignas(8) size_t posting_size = builder->total_postings * sizeof(FlatPosting);
     alignas(8) size_t offset_size = builder->total_offsets * sizeof(size_t);
 
-    size_t blob_size = str_size + doc_size + term_size + posting_size + offset_size;
-    flatmap->blob = malloc(blob_size);
+    flatmap->blob_size = str_size + doc_size + term_size + posting_size + offset_size;
+    flatmap->blob = malloc(flatmap->blob_size);
     if (flatmap->blob == NULL) {
         free(flatmap);
         return NULL;
@@ -29,11 +29,11 @@ FlatIndex *flatmap_create(IndexBuilder *builder) {
 
     // Set the view pointers
     char *base = (char *)flatmap->blob;
-    flatmap->strings = base;
-    flatmap->docs = (FlatDoc *)(base + str_size);
-    flatmap->terms = (FlatTerm *)(base + str_size + doc_size);
-    flatmap->postings = (FlatPosting *)(base + str_size + doc_size + term_size);
-    flatmap->offsets = (size_t *)(base + str_size + doc_size + term_size + posting_size);
+    flatmap->docs = (FlatDoc *)base;
+    flatmap->terms = (FlatTerm *)(base + doc_size);
+    flatmap->postings = (FlatPosting *)(base + doc_size + term_size);
+    flatmap->offsets = (size_t *)(base + doc_size + term_size + posting_size);
+    flatmap->strings = (char *)(base + doc_size + term_size + posting_size + offset_size);
 
     // Set the counts
     flatmap->strings_size = str_size;
