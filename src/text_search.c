@@ -8,6 +8,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+struct TextSearchIndex {
+    bool is_final;
+    union {
+        IndexBuilder *builder; // Maps token_string -> BuildEntry and stores index metadata
+        FlatIndex *flatmap;    // Flattened, memory optimized immutable version of map
+    };
+};
+
 static inline bool is_valid_token_char(char c) { return isalnum((unsigned char)c) || (unsigned char)c == '\''; }
 
 // Returns true if a new token has been parsed
@@ -130,23 +138,22 @@ void tsi_index_document(TextSearchIndex *tsi, const char *name, const char *text
     tsi->builder->total_doc_name_bytes += strlen(name) + 1;
 }
 
-int tsi_finalize(TextSearchIndex *tsi) {
+TsiStatus tsi_finalize(TextSearchIndex *tsi) {
     FlatIndex *flatmap = flatmap_create(tsi->builder);
     if (flatmap == NULL) {
-        return 1;
+        return TSI_ERROR_OOM;
     }
 
     hashmap_destroy(tsi->builder);
 
     tsi->flatmap = flatmap;
     tsi->is_final = true;
-    return false;
+    return TSI_SUCCESS;
 }
 
-int tsi_serialize_to_disk(TextSearchIndex *tsi, char *path) {
+TsiStatus tsi_serialize_to_disk(TextSearchIndex *tsi, char *path) {
     if (!tsi->is_final) {
-        printf("[TSI WARNING]: Index cannot be serialized before being finalized.");
-        return 1;
+        return TSI_ERROR_NOT_FINALIZED;
     }
 
     IndexHeader header = {
@@ -169,57 +176,50 @@ int tsi_serialize_to_disk(TextSearchIndex *tsi, char *path) {
 
     FILE *fp = fopen(path, "wb");
     if (!fp)
-        return 1;
+        return TSI_ERROR_IO;
 
     if (fwrite(&header, sizeof(IndexHeader), 1, fp) != 1) {
-        printf("[TSI ERROR]: Failed to write to disk\n");
-        return 1;
+        return TSI_ERROR_IO;
     }
 
     if (fwrite(tsi->flatmap->blob, tsi->flatmap->blob_size, 1, fp) != 1) {
-        printf("[TSI ERROR]: Failed to write to disk\n");
-        return 1;
+        return TSI_ERROR_IO;
     }
 
     fclose(fp);
-    return 0;
+    return TSI_SUCCESS;
 }
 
-int tsi_load_from_disk(TextSearchIndex *tsi, char *file_path) {
+TsiStatus tsi_load_from_disk(TextSearchIndex *tsi, char *file_path) {
     if (tsi->is_final) {
-        printf("[TSI WARNING]: Early Abort. Finalized Index already exists.");
-        return 1;
+        return TSI_ERROR_ALREADY_FINALIZED;
     }
 
     FILE *fp = fopen(file_path, "rb");
     if (!fp) {
-        printf("[TSI ERROR]: Failed to open file %s", file_path);
-        return 1;
+        return TSI_ERROR_IO;
     }
 
     // Read the header metadata
     IndexHeader header;
     if (fread(&header, sizeof(IndexHeader), 1, fp) != 1) {
-        printf("[TSI ERROR]: Failed to read file.");
-        return 1;
+        return TSI_ERROR_IO;
     }
 
     if (header.magic != CTEXTSEARCH_MAGIC_NUMBER || header.version != CTEXTSEARCH_VERSION_NUMBER) {
-        printf("[TSI ERROR]: File contained invalid header.");
-        return 1;
+        return TSI_ERROR_CORRUPT_HEADER;
     }
 
     FlatIndex *flatmap = malloc(sizeof(FlatIndex));
     if (!flatmap) {
-        return 1;
+        return TSI_ERROR_OOM;
     }
 
     // Read the data blob
     size_t blob_size = header.total_file_size - sizeof(IndexHeader);
     void *blob = malloc(blob_size);
     if (fread(blob, blob_size, 1, fp) != 1) {
-        printf("[TSI ERROR]: Failed to read file.");
-        return 1;
+        return TSI_ERROR_IO;
     }
 
     // Intialize map
@@ -240,7 +240,7 @@ int tsi_load_from_disk(TextSearchIndex *tsi, char *file_path) {
 
     tsi->flatmap = flatmap;
     tsi->is_final = true;
-    return 0;
+    return TSI_SUCCESS;
 }
 
 TextSearchResult *tsi_search_word(const TextSearchIndex *tsi, const char *query) {

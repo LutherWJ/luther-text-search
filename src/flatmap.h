@@ -1,7 +1,11 @@
 #ifndef FLATMAP_H
 #define FLATMAP_H
 
-#include "index_builder.h"
+#include "builder_hashmap.h"
+#include <stddef.h>
+#include <stdint.h>
+
+// Combines four characters into a u32
 #define FOURCC(a, b, c, d)                                                                                             \
     ((uint32_t)(uint8_t)(a) | ((uint32_t)(uint8_t)(b) << 8) | ((uint32_t)(uint8_t)(c) << 16) |                         \
      ((uint32_t)(uint8_t)(d) << 24))

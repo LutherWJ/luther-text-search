@@ -1,4 +1,3 @@
-#include "array_list.h"
 #include "text_search.h"
 #include <dirent.h>
 #include <stdio.h>
@@ -7,7 +6,15 @@
 
 #define INPUT_BUFFER_SIZE 256
 
+static size_t get_file_size(FILE *fp) {
+    fseek(fp, 0L, SEEK_END); // Jump to the end of the file
+    long size = ftell(fp);   // Get current byte position
+    rewind(fp);              // Reset cursor back to start of file
+    return size;
+}
+
 static int index_directory(TextSearchIndex *tsi, const char *dir_path) {
+    // Get handle to the docs directory
     DIR *dir = opendir(dir_path);
     struct dirent *entry;
 
@@ -18,6 +25,7 @@ static int index_directory(TextSearchIndex *tsi, const char *dir_path) {
     }
 
     printf("Indexing the following files: \n");
+    // Sequentially read and index each file in the directory
     while ((entry = readdir(dir)) != NULL) {
         if (entry->d_name[0] == '.') {
             continue;
@@ -27,35 +35,31 @@ static int index_directory(TextSearchIndex *tsi, const char *dir_path) {
         // Get file handle
         char filepath[512];
         snprintf(filepath, sizeof(filepath), "docs/%s", entry->d_name);
-        FILE *fptr = fopen(filepath, "r");
-        if (fptr == NULL) {
+        FILE *fp = fopen(filepath, "r");
+        if (fp == NULL) {
             printf("Failed to open file: %s\n", filepath);
             closedir(dir);
             return 1;
         }
 
         // Allocate memory to hold the text content of the file
-        ArrayList *file_buf = array_create(sizeof(char), 4);
+        size_t file_size = get_file_size(fp);
+        char *file_buf = malloc(file_size);
         if (file_buf == NULL) {
             return 1;
         }
 
         // Read file 4 bytes at a time
-        int c;
-        while ((c = fgetc(fptr)) != EOF) {
-            char byte = (char)c;
-            if (array_push(file_buf, &byte)) {
-                return 1;
-            }
-        }
-        char byte = '\0';
-        if (array_push(file_buf, &byte)) {
-            return 1;
+        char c;
+        for (size_t i = 0; i < file_size; i++) {
+            file_buf[i] = (char)fgetc(fp);
         }
 
-        tsi_index_document(tsi, entry->d_name, (char *)file_buf->data);
-        fclose(fptr);
-        array_free(file_buf);
+        char byte = '\0';
+
+        tsi_index_document(tsi, entry->d_name, file_buf);
+        fclose(fp);
+        free(file_buf);
     }
     closedir(dir);
     return 0;

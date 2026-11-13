@@ -1,24 +1,25 @@
 /*
  * This file serves as the API for the library.
- * Internal types and helpers will all be hidden away in other files
+ * Internal types and logic will all be hidden away in other files
  */
 
 #ifndef TEXT_SEARCH_H
 #define TEXT_SEARCH_H
 
-#include "flatmap.h"
-#include "index_builder.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-struct TextSearchIndex {
-    bool is_final;
-    union {
-        IndexBuilder *builder; // Maps token_string -> BuildEntry and stores index metadata
-        FlatIndex *flatmap;    // Flattened, memory optimized immutable version of map
-    };
-};
+typedef struct TextSearchIndex TextSearchIndex;
+
+typedef enum {
+    TSI_SUCCESS = 0,
+    TSI_ERROR_NOT_FINALIZED,
+    TSI_ERROR_ALREADY_FINALIZED,
+    TSI_ERROR_CORRUPT_HEADER,
+    TSI_ERROR_IO,
+    TSI_ERROR_OOM,
+} TsiStatus;
 
 // All occurances of a word within a document
 typedef struct {
@@ -39,9 +40,9 @@ typedef struct {
 TextSearchIndex *tsi_create();
 void tsi_destroy(TextSearchIndex *index);
 void tsi_index_document(TextSearchIndex *tsi, const char *name, const char *text);
-int tsi_finalize(TextSearchIndex *tsi);
-int tsi_serialize_to_disk(TextSearchIndex *tsi, char *file_path);
-int tsi_load_from_disk(TextSearchIndex *tsi, char *file_path);
+TsiStatus tsi_finalize(TextSearchIndex *tsi);
+TsiStatus tsi_serialize_to_disk(TextSearchIndex *tsi, char *file_path);
+TsiStatus tsi_load_from_disk(TextSearchIndex *tsi, char *file_path);
 TextSearchResult *tsi_search_word(const TextSearchIndex *tsi, const char *word);
 void tsi_free_result(TextSearchResult *result);
 

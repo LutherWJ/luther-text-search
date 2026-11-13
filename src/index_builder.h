@@ -12,8 +12,6 @@ typedef struct {
     size_t byte_offset;
 } Token;
 
-typedef struct TextSearchIndex TextSearchIndex;
-typedef struct IndexBuilder IndexBuilder;
 // Information about each indexed document
 typedef struct {
     uint32_t doc_id;    // Sequential ID

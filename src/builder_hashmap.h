@@ -8,7 +8,7 @@
 #define FNV_PRIME             0x100000001b3
 #define HASHMAP_INIT_CAPACITY 128
 
-struct IndexBuilder {
+typedef struct {
     // Hashmap
     BuildTerm *buckets;
     size_t count;
@@ -22,7 +22,7 @@ struct IndexBuilder {
     size_t total_postings;
     size_t total_offsets;
     size_t total_doc_name_bytes;
-};
+} IndexBuilder;
 
 IndexBuilder *hashmap_create(size_t init_capacity);
 void hashmap_destroy(IndexBuilder *map);
